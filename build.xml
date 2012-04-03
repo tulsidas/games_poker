@@ -1,0 +1,298 @@
+<?xml version="1.0"?>
+
+<!-- 
+    This template is designed for trying out PulpCore quickly without creating 
+    a directory structure for a full project.
+-->
+<project name="poker" default="build" basedir=".">
+
+	<property file="build.properties" />
+	<tstamp />
+
+	<!-- 
+        Edit these properties for your project:
+        
+        pulpcore.player.wait  If true, the PulpCore Player Ant task waits until the Player
+                              window is closed. Otherwise, the Ant task returns immediately. 
+                              Default is true.
+        project.jar           The name of the project jar to create.
+        project.assets        The name of the project zip file to create.
+        project.scene         The name of the first scene to display 
+        project.width         The width of the applet.
+        project.height        The height of the applet.
+        pulpcore.build        Build mode: "release" or "debug".
+                              For "debug" builds, these hotkeys are available:
+                              Ctrl-1  Slow-motion mode.
+                              Ctrl-2  Normal speed mode.
+                              Ctrl-3  Fast-forward mode.
+                              Ctrl-C  View the console. The console also appears when there is an 
+                                      uncaught exception.
+                              Ctrl-I  View frame rate and memory information. 
+                              Ctrl-X  View the Scene Selector.
+                              Ctrl-D  View dirty rectangles (Scene2D scenes only).
+                              For "release" builds, the resulting jar is obfucated if the Proguard 
+                              jar is available.
+        pulpcore.path         The path to the directory containing the PulpCore jars.
+        proguard.path         The path to the Proguard jar (Proguard 3.6 or newer).
+        library.path          The path to the jar or zip for the Java runtime. Required for Proguard. 
+                              To ensure maximum compatibility, use the Java 1.4 classes. Otherwise:
+                              For Windows, use "${java.home}/lib/rt.jar".
+                              For Max OS X, use "${java.home}/../Classes/classes.jar"
+    -->
+	<property name="pulpcore.player.wait" value="false" />
+	<property name="project.scene" value="poker.client.LoginScene" />
+	<property name="project.jar" value="poker${DSTAMP}${TSTAMP}.jar" />
+	<property name="project.assets.zip" value="poker${DSTAMP}${TSTAMP}.zip" />
+	<property name="server.jar" value="pokerserver.jar" />
+	<property name="project.width" value="720" />
+	<property name="project.height" value="455" />
+	<property name="project.params" value="" />
+	<property name="pulpcore.build" value="debug" />
+	<property name="pulpcore.path" value="../base/lib" />
+	<property name="base.src.dir" value="../base/src" />
+	<property name="proguard.path" value="../base/lib/proguard.jar" />
+	<property name="project.codebase" value="http://j.taringa.net" />
+	<property name="library.path" value="/usr/lib/jvm/java-6-sun/jre/lib/rt.jar" />
+
+	<!-- poker additional paths -->
+	<property name="mina.jar.file" value="${pulpcore.path}/mina-core.jar" />
+	<property name="mina_integration.jar.file" value="${pulpcore.path}/mina-integration-jmx.jar" />
+	<property name="slfj4.jar.file" value="${pulpcore.path}/slf4j-api.jar" />
+	<property name="google-collection.jar.file" value="${pulpcore.path}/google-collect.jar" />
+	<property name="spring-beans.jar.file" value="${pulpcore.path}/spring-beans.jar" />
+	<property name="spring-core.jar.file" value="${pulpcore.path}/spring-core.jar" />
+	<property name="spring-jdbc.jar.file" value="${pulpcore.path}/spring-jdbc.jar" />
+	<property name="spring-tx.jar.file" value="${pulpcore.path}/spring-tx.jar" />
+	<property name="commons-dbcp.jar.file" value="${pulpcore.path}/commons-dbcp.jar" />
+	<property name="commons-pool.jar.file" value="${pulpcore.path}/commons-pool.jar" />
+	<property name="jogg.jar.file" value="${pulpcore.path}/jogg.jar" />
+	<property name="jorbis.jar.file" value="${pulpcore.path}/jorbis.jar" />
+	<property name="jedis.jar.file" value="${pulpcore.path}/jedis-1.5.0.jar" />
+
+	<!--
+        Normally you won't need to edit anything below this line 
+    -->
+	<property name="pulpcore.version" value="0.11" />
+	<property name="pulpcore.platform" value="applet" />
+	<property name="autoload.assets.zip" value="${project.assets.zip}" />
+
+	<!-- Project paths -->
+	<property name="src" value="src" />
+	<property name="build" value="build/" />
+	<property name="build.temp" value="${build}/temp" />
+	<property name="build.classes" value="${build.temp}/classes" />
+	<property name="build.res" value="${build.temp}" />
+
+	<!-- PulpCore paths -->
+	<property name="core.jar.file" value="${pulpcore.path}/pulpcore-${pulpcore.platform}-${pulpcore.build}-${pulpcore.version}.jar" />
+	<property name="tools.jar.file" value="${pulpcore.path}/pulpcore-assettools-${pulpcore.version}.jar" />
+	<property name="player.jar.file" value="${pulpcore.path}/pulpcore-player-${pulpcore.version}.jar" />
+
+	<!-- PulpCore tasks -->
+	<taskdef resource="tasks.properties" classpath="${tools.jar.file}" />
+	<taskdef resource="tasks.properties" classpath="${player.jar.file}" />
+
+	<target name="clean" description="Deletes builds, compiled classes, and processed assets">
+		<delete dir="${build}" />
+	</target>
+
+	<!-- Deletes the temporary build path -->
+	<target name="clean-temp">
+		<delete dir="${build.temp}" />
+	</target>
+
+
+	<!-- Initials directories and checks for valid properties -->
+	<target name="init">
+		<fail message="Required file not found: ${core.jar.file}">
+			<condition>
+				<not>
+					<available file="${core.jar.file}" />
+				</not>
+			</condition>
+		</fail>
+
+		<fail message="Required file not found: ${tools.jar.file}">
+			<condition>
+				<not>
+					<available file="${tools.jar.file}" />
+				</not>
+			</condition>
+		</fail>
+
+		<fail message="File not found: ${library.path}">
+			<condition>
+				<and>
+					<isset property="library.path" />
+					<not>
+						<equals arg1="${library.path}" arg2="" />
+					</not>
+					<not>
+						<available file="${library.path}" />
+					</not>
+				</and>
+			</condition>
+		</fail>
+
+		<fail message="File not found: ${proguard.path}">
+			<condition>
+				<and>
+					<isset property="proguard.path" />
+					<not>
+						<equals arg1="${proguard.path}" arg2="" />
+					</not>
+					<not>
+						<available file="${proguard.path}" />
+					</not>
+				</and>
+			</condition>
+		</fail>
+
+		<condition property="obfuscate.task">
+			<and>
+				<equals arg1="${pulpcore.build}" arg2="release" />
+				<available resource="proguard/ant/task.properties" classpath="${proguard.path}" />
+			</and>
+		</condition>
+
+		<fail message="Required property library.path is not defined">
+			<condition>
+				<and>
+					<isset property="obfuscate.task" />
+					<or>
+						<not>
+							<isset property="library.path" />
+						</not>
+						<equals arg1="${library.path}" arg2="" />
+					</or>
+				</and>
+			</condition>
+		</fail>
+
+		<condition property="applet.html.task">
+			<equals arg1="${pulpcore.platform}" arg2="applet" />
+		</condition>
+
+		<delete dir="${build.classes}" failonerror="false" />
+		<mkdir dir="${build}" />
+		<mkdir dir="${build.temp}" />
+		<mkdir dir="${build.classes}" />
+		<mkdir dir="${build.res}" />
+		
+		<echo file="${build}/version">${DSTAMP}${TSTAMP}</echo>
+	</target>
+
+	<!-- Compiles the code -->
+	<target name="compile" depends="init">
+		<javac destdir="${build.classes}" source="5" target="5" debug="on" deprecation="on">
+			<src path="${src}" />
+			<src path="${base.src.dir}" />
+
+			<classpath path="${core.jar.file}" />
+
+			<classpath path="${mina.jar.file}" />
+			<classpath path="${mina_integration.jar.file}" />
+			<classpath path="${slfj4.jar.file}" />
+			<classpath path="${google-collection.jar.file}" />
+			<classpath path="${spring-beans.jar.file}" />
+			<classpath path="${spring-core.jar.file}" />
+			<classpath path="${spring-jdbc.jar.file}" />
+			<classpath path="${spring-tx.jar.file}" />
+			<classpath path="${commons-dbcp.jar.file}" />
+			<classpath path="${commons-pool.jar.file}" />
+			<classpath path="${jogg.jar.file}" />
+			<classpath path="${jorbis.jar.file}" />
+			<classpath path="${jedis.jar.file}" />
+
+			<include name="**/*.java" />
+
+			<exclude name="**/*Test.java" />
+		</javac>
+	</target>
+
+	<!-- Creates a jar of the compiled code and libs -->
+	<target name="jar" depends="compile">
+		<jar destfile="${build}/${project.jar}">
+			<fileset dir="${build.classes}">
+				<patternset id="client.classes">
+					<include name="**/*.class" />
+
+					<exclude name="poker/server/**" />
+					<exclude name="server/**" />
+				</patternset>
+			</fileset>
+
+			<fileset dir="${build}">
+				<patternset id="version">
+					<include name="version" />
+				</patternset>
+			</fileset>
+
+			<zipfileset src="${core.jar.file}" excludes="META-INF/**/*" />
+			<zipfileset src="${mina.jar.file}" excludes="META-INF/**/*" />
+			<zipfileset src="${slfj4.jar.file}" excludes="META-INF/**/*" />
+			<zipfileset src="${jogg.jar.file}" excludes="META-INF/**/*" />
+			<zipfileset src="${jorbis.jar.file}" excludes="META-INF/**/*" />
+		</jar>
+
+		<jar destfile="${build}/${server.jar}">
+			<fileset dir="${build.classes}">
+				<patternset id="server.classes">
+					<include name="**/*.class" />
+
+					<exclude name="poker/client/**" />
+					<exclude name="client/**" />
+					<exclude name="org/slf4j/impl/**" />
+				</patternset>
+			</fileset>
+
+			<fileset dir="${build}">
+				<patternset id="version">
+					<include name="version" />
+				</patternset>
+			</fileset>
+		</jar>
+	</target>
+
+	<!-- Obfuscates the jar using Proguard -->
+	<target name="obfuscate" if="obfuscate.task" depends="jar">
+		<taskdef resource="proguard/ant/task.properties" classpath="${proguard.path}" />
+
+		<copy file="${build}/${project.jar}" tofile="${build}/in.jar" />
+		<proguard defaultpackage="" ignorewarnings="true" allowaccessmodification="true" printmapping="${build.temp}/proguard-mapping.txt" printusage="${build.temp}/proguard-usage.txt" printseeds="${build.temp}/proguard-seeds.txt">
+			<libraryjar name="${library.path}" />
+
+			<injar name="${build}/in.jar" />
+			<outjar name="${build}/${project.jar}" />
+
+			<keep name="pulpcore.sound.JOrbisAdapter">
+				<!-- Keep the special method that can be accessed via reflection -->
+				<method name="decode" />
+			</keep>
+			<keep name="pulpcore.platform.applet.CoreApplet">
+				<!-- Keep the special method that can be accessed via JavaScript -->
+				<method name="getCurrentScene" />
+			</keep>
+			<keep name="${project.scene}" />
+
+			<keep name="org.slf4j.**" />
+
+			<keep extends="common.model.AbstractRoom" />
+			
+			<!-- falla por métodos estáticos -->
+			<keeppackagenames filter="org.slf4j.**" />
+		</proguard>
+		<delete file="${build}/in.jar" />
+	</target>
+
+	<!-- Creates the assets zip file -->
+	<target name="res" depends="init">
+		<pulpcore-assets srcDir="${src}" destDir="${build.res}/zip" />
+
+		<delete file="${build}/${project.assets.zip}" failonerror="false" />
+		<zip destfile="${build}/${project.assets.zip}" filesonly="true" whenempty="create" basedir="${build.res}/zip" />
+	</target>
+
+	<!-- Compiles the code and creates the assets zip -->
+	<target name="build" depends="res, obfuscate" description="Build" />
+</project>
